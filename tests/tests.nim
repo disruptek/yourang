@@ -9,10 +9,27 @@ template okay(body: untyped): bool =
     raiseOsError(OsErrorCode(code.abs))
   true
 
+const
+  sixtyFour: uint64 = 64
+
 suite "yourang":
   test "queueInit":
     var
-      z = 64'u64
-      p = cast[ptr params](allocShared(sizeof(params)))
-      r = cast[ptr ring](allocShared(sizeof(ring)))
-    check okay queueInit(z, r, p)
+      r = newRing()
+      flags: set[Flag] = {}
+    try:
+      check okay queueInit(sixtyFour, r, flags)
+      queueExit(r)
+    finally:
+      dealloc r
+
+  test "queueInitParams":
+    var
+      r = newRing()
+      p = newParams()
+    try:
+      check okay queueInitParams(sixtyFour, r, p)
+      queueExit(r)
+    finally:
+      dealloc r
+      dealloc p

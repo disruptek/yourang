@@ -3,8 +3,8 @@ thread-safe performant async io for Linux
 
 See https://kernel.dk/io_uring.pdf for underlying implementation details.
 
-- `nim-1.0 +/ cpp` [![Build Status](https://travis-ci.org/disruptek/yourang.svg?branch=master)](https://travis-ci.org/disruptek/yourang)
-- `nim-1.3 +/ arc +/ cpp` [![Build Status](https://travis-ci.org/disruptek/yourang.svg?branch=devel)](https://travis-ci.org/disruptek/yourang)
+- `nim-1.0 cpp` [![Build Status](https://travis-ci.org/disruptek/yourang.svg?branch=master)](https://travis-ci.org/disruptek/yourang)
+- `nim-1.3 cpp +/ arc` [![Build Status](https://travis-ci.org/disruptek/yourang.svg?branch=devel)](https://travis-ci.org/disruptek/yourang)
 
 ## Installation
 ```
