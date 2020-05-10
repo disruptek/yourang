@@ -37,26 +37,11 @@ struct io_uring_sqe {
 {.push callConv: cdecl, dynlib: "liburing.so(|.1|.0)".}
 
 type
-  params {.iou_type.} = object
-  Params* = ptr params
-  ring {.iou, importcpp: "io_uring".} = object
-  Ring* = ptr ring
-  Flag* = enum
-    One
-    Two
+  params* {.iou_type.} = object
+  ring* {.iou, importcpp: "io_uring".} = object
 
-converter toFlags*(flags: set[Flag]): uint =
-  for flag in flags.items:
-    result = result and flag.ord.uint
-
-proc newParams*(): Params =
-  result = cast[Params](allocShared(sizeof params))
-
-proc newRing*(): Ring =
-  result = cast[Ring](allocShared(sizeof ring))
-
-proc queue_init_params*(entries: uint64; ring: ptr ring;
-                 params: Params): cint {.iou_proc.}
+proc queue_init_params(entries: uint64; ring: ptr ring;
+                       params: ptr params): cint {.iou_proc.}
 proc queue_init*(entries: uint64; ring: ptr ring;
                  flags: uint): cint {.iou_proc.}
-proc queue_exit*(ring: Ring) {.iou_proc.}
+proc queue_exit*(ring: ptr ring) {.iou_proc.}
