@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.0.1"
+version       = "0.0.2"
 author        = "Andy Davidoff"
 description   = "thread-safe performant async io for Linux"
 license       = "MIT"
@@ -10,4 +10,4 @@ backend = "cpp"
 
 # Dependencies
 
-requires "nim >= 1.3.0"
+requires "nim >= 1.0.6"
