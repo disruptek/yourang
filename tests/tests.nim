@@ -4,7 +4,7 @@ import std/unittest
 import yourang
 
 const
-  sixtyFour: uint64 = 64
+  sixtyFour = Entries.e64
 
 suite "yourang":
   test "queue":
