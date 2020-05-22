@@ -100,7 +100,9 @@ proc `+`*(p: pointer; i: SomeInteger): pointer =
 
 proc uringMap*(offset: Off; fd: int32; begin: uint32;
                count: uint32; typ: typedesc): pointer =
-  result = mmap(nil, int (begin + count * sizeof(typ).uint32),
+  let
+    size = int (begin + count * sizeof(typ).uint32)
+  result = mmap(nil, size,
                 ProtRead or ProtWrite, MapShared or MapPopulate,
                 fd.cint, offset)
   if result == MapFailed:

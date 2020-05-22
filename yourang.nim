@@ -21,6 +21,7 @@ type
     sq: Ring
     sqes: pointer
     params: ptr io_uring_params
+    teardown: proc (q: var Queue)
 
   RingKind = enum
     Sq
@@ -39,7 +40,7 @@ type
     of Sq:
       flags: uint32
       dropped: pointer
-      `array`: pointer
+      array: pointer
     of Cq:
       overflow: pointer
       cqes: pointer
@@ -109,35 +110,11 @@ proc newRing(fd: int32; offset: ptr io_sqring_offsets; size: uint32): Ring =
   assert size in validEntries
   result = Ring(kind: Sq, size: size.Entries)
   let
-    ring = IoRingOffSqRing.uringMap(fd, offset.`array`, size, pointer)
+    ring = IoRingOffSqRing.uringMap(fd, offset.array, size, pointer)
   result.ring = ring
-  result.`array` = ring + offset.`array`
+  result.array = ring + offset.array
   result.dropped = ring + offset.dropped
   result.init offset
-
-proc newQueue*(entries: Entries; flags = defaultFlags): Queue =
-  var
-    params = cast[ptr io_uring_params](allocShared(sizeof io_uring_params))
-  initLock result.lock
-  initLock result.read
-  initLock result.write
-
-  # ask the kernel for the file-descriptor to a ring pair of the spec'd size
-  # this also populates the contents of the params object
-  result.fd = io_uring_setup(entries.uint64, params)
-
-  # save that
-  result.params = params
-  # also save the flags that the kernel came back with
-  result.flags = params.flags
-
-  # setup the two rings
-  result.cq = newRing(result.fd, addr params.cq_off, size = params.cq_entries)
-  result.sq = newRing(result.fd, addr params.sq_off, size = params.sq_entries)
-
-  # setup sqe array
-  result.sqes = IORingOffSqes.uringMap(result.fd, 0, params.sq_entries,
-                                       io_uring_sqe)
 
 when false:
   proc submit*(queue: var Queue; wait: uint64 = 0) =
@@ -161,17 +138,47 @@ proc `=destroy`(queue: var Queue) =
   acquire queue.read
   acquire queue.write
 
-  uringUnmap(queue.sqes, queue.params.sq_entries.int)
-  teardown(queue.cq, queue.params.cq_entries.int)
-  teardown(queue.sq, queue.params.sq_entries.int)
-  #io_uring_queue_exit(queue.cq.ring)
-  #io_uring_queue_exit(queue.sq.ring)
+  if queue.teardown != nil:
+    uringUnmap(queue.sqes, queue.params.sq_entries.int)
+    teardown(queue.cq, queue.params.cq_entries.int)
+    teardown(queue.sq, queue.params.sq_entries.int)
+    #io_uring_queue_exit(queue.cq.ring)
+    #io_uring_queue_exit(queue.sq.ring)
+
+  # these do not work outside of arc
   deinitLock queue.lock
   deinitLock queue.read
   deinitLock queue.write
-  echo "destroy"
+
   when defined(yourangDebug):
     echo "destroyed queue"
+
+proc newQueue*(entries: Entries; flags = defaultFlags): Queue =
+  var
+    params = cast[ptr io_uring_params](allocShared(sizeof io_uring_params))
+  initLock result.lock
+  initLock result.read
+  initLock result.write
+
+  # ask the kernel for the file-descriptor to a ring pair of the spec'd size
+  # this also populates the contents of the params object
+  result.fd = io_uring_setup(entries.uint64, params)
+
+  # save that
+  result.params = params
+  # also save the flags that the kernel came back with
+  result.flags = params.flags
+
+  # setup the two rings
+  result.cq = newRing(result.fd, addr params.cq_off, size = params.cq_entries)
+  result.sq = newRing(result.fd, addr params.sq_off, size = params.sq_entries)
+
+  # setup sqe array
+  result.sqes = IORingOffSqes.uringMap(result.fd, params.sq_off.array,
+                                       params.sq_entries, uint32)
+
+  # set the teardown proc if we make it this far
+  result.teardown = `=destroy`
 
 proc read_barrier() =
   {.warning: "tbd".}
